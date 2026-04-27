@@ -523,7 +523,7 @@ def _(q_input, opts_input, order_sel, method_sel, mo):
             mo.stat("Token overhead", f"+{_overhead:.0f}%"),
         ], justify="start", gap=3),
         mo.md(f"**Generated prompt — {_m}:**"),
-        mo.code(_final, language="text"),
+        mo.md(f"```\n{_final}\n```"),
         mo.callout(
             mo.md("**Why options-first is harder:** The model encodes options A–D before seeing the question. "
                   "With repetition, the second copy gives option tokens access to the question context."),
@@ -681,11 +681,11 @@ def _(sel_prompt, topk_slider, np, plt, mo):
         mo.accordion({
             "📋 See all three prompt variants": mo.vstack([
                 mo.md("**Baseline:**"),
-                mo.code(_base_prompt[:400] + ("..." if len(_base_prompt)>400 else ""), language="text"),
+                mo.md(f"```\n{_base_prompt[:400] + ('...' if len(_base_prompt)>400 else '')}\n```"),
                 mo.md("**Full Repetition:**"),
-                mo.code(_full_repeat[:400] + "...", language="text"),
+                mo.md(f"```\n{_full_repeat[:400]}...\n```"),
                 mo.md(f"**Selective Repetition (top-{_k}):**"),
-                mo.code(_sel_repeat, language="text"),
+                mo.md(f"```\n{_sel_repeat}\n```"),
             ])
         }),
         mo.callout(
