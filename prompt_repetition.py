@@ -75,18 +75,18 @@ def _(mo):
 
 @app.cell
 def _(mo):
-    _seq = mo.ui.slider(4, 14, value=7, label="Sequence length n")
-    _rep = mo.ui.switch(label="Toggle: show repeated prompt", value=False)
-    mo.hstack([_seq, _rep], justify="start", gap=3)
-    return _seq, _rep
+    seq_slider = mo.ui.slider(4, 14, value=7, label="Sequence length n")
+    rep_switch = mo.ui.switch(label="Toggle: show repeated prompt", value=False)
+    mo.hstack([seq_slider, rep_switch], justify="start", gap=3)
+    return seq_slider, rep_switch
 
 
 @app.cell
-def _(_seq, _rep, np, plt, mo):
+def _(seq_slider, rep_switch, np, plt, mo):
     import matplotlib.patches as mpatches
 
-    _n = _seq.value
-    _repeated = _rep.value
+    _n = seq_slider.value
+    _repeated = rep_switch.value
     _total = _n * 2 if _repeated else _n
 
     # Build causal mask
@@ -178,29 +178,29 @@ def _(mo):
 
 @app.cell
 def _(mo):
-    _models = mo.ui.multiselect(
+    models_sel = mo.ui.multiselect(
         options=["Gemini 2.0 Flash", "Gemini 2.0 Flash-Lite", "GPT-4o", "GPT-4o-mini",
                  "Claude 3.7 Sonnet", "Claude 3 Haiku", "DeepSeek V3"],
         value=["Gemini 2.0 Flash-Lite", "GPT-4o-mini", "Claude 3 Haiku", "DeepSeek V3"],
         label="Models"
     )
-    _bench = mo.ui.dropdown(
+    bench_sel = mo.ui.dropdown(
         options=["All", "ARC (Q-first)", "ARC (Opts-first)", "OpenBookQA",
                  "GSM8K", "MMLU-Pro", "NameIndex", "MiddleMatch"],
         value="All",
         label="Benchmark filter"
     )
-    _sort = mo.ui.radio(
+    sort_sel = mo.ui.radio(
         options=["By benchmark", "By gain (largest first)"],
         value="By benchmark",
         label="Sort"
     )
-    mo.hstack([_models, _bench, _sort], justify="start", gap=2)
-    return _models, _bench, _sort
+    mo.hstack([models_sel, bench_sel, sort_sel], justify="start", gap=2)
+    return models_sel, bench_sel, sort_sel
 
 
 @app.cell
-def _(_models, _bench, _sort, np, plt, mo):
+def _(models_sel, bench_sel, sort_sel, np, plt, mo):
     # Results digitized from Figure 1, arXiv:2512.14982
     # (baseline_acc, repeated_acc, significant_win)
     _DATA = {
@@ -214,18 +214,18 @@ def _(_models, _bench, _sort, np, plt, mo):
     }
     _BENCHES = ["ARC (Q-first)","ARC (Opts-first)","OpenBookQA","GSM8K","MMLU-Pro","NameIndex","MiddleMatch"]
 
-    _sel_models = _models.value or list(_DATA.keys())
-    _sel_bench  = [_bench.value] if _bench.value != "All" else _BENCHES
+    _sel_models = models_sel.value or list(_DATA.keys())
+    _sel_bench  = [bench_sel.value] if bench_sel.value != "All" else _BENCHES
 
     # Build flat list of (model, bench, base, rep, sig)
     _rows = []
     for _m in _sel_models:
         for _bi, _b in enumerate(_BENCHES):
             if _b in _sel_bench:
-                _base, _rep, _sig = _DATA[_m][_bi]
-                _rows.append((_m, _b, _base, _rep, _sig))
+                _base, _rep_val, _sig = _DATA[_m][_bi]
+                _rows.append((_m, _b, _base, _rep_val, _sig))
 
-    if _sort.value == "By gain (largest first)":
+    if sort_sel.value == "By gain (largest first)":
         _rows.sort(key=lambda r: -(r[3]-r[2]))
 
     mo.stop(len(_rows) == 0, mo.callout(mo.md("Select at least one model."), kind="warn"))
@@ -299,17 +299,17 @@ def _(mo):
 
 @app.cell
 def _(mo):
-    _abl_bench = mo.ui.radio(
+    abl_bench = mo.ui.radio(
         options=["NameIndex", "MiddleMatch", "ARC (Opts-first)", "MMLU-Pro"],
         value="NameIndex",
         label="Benchmark (NameIndex shows the most dramatic effect)"
     )
-    _abl_bench
-    return _abl_bench,
+    abl_bench
+    return abl_bench,
 
 
 @app.cell
-def _(_abl_bench, np, plt, mo):
+def _(abl_bench, np, plt, mo):
     _ABL = {
         "NameIndex":       {"Gemini Flash":[0.587,0.960,0.955,0.987,0.587],"Gemini Flash-Lite":[0.213,0.973,0.960,0.987,0.213],"GPT-4o":[0.680,0.940,0.935,0.960,0.680],"GPT-4o-mini":[0.450,0.870,0.865,0.920,0.450],"Claude Sonnet":[0.620,0.920,0.915,0.950,0.620],"Claude Haiku":[0.380,0.820,0.810,0.880,0.380],"DeepSeek V3":[0.520,0.900,0.895,0.940,0.520]},
         "MiddleMatch":     {"Gemini Flash":[0.510,0.820,0.815,0.870,0.510],"Gemini Flash-Lite":[0.420,0.760,0.755,0.830,0.420],"GPT-4o":[0.590,0.840,0.835,0.880,0.590],"GPT-4o-mini":[0.480,0.750,0.745,0.810,0.480],"Claude Sonnet":[0.560,0.810,0.805,0.860,0.560],"Claude Haiku":[0.440,0.720,0.715,0.780,0.440],"DeepSeek V3":[0.500,0.790,0.785,0.840,0.500]},
@@ -319,19 +319,19 @@ def _(_abl_bench, np, plt, mo):
     _METHODS = ["Baseline","Repeat ×2","Verbose","Repeat ×3","Padding"]
     _COLORS  = ["#4C72B0","#DD8452","#55A868","#C44E52","#8172B2"]
 
-    _bname = _abl_bench.value
+    _bname = abl_bench.value
     _data  = _ABL[_bname]
     _mnames = list(_data.keys())
     _xs = np.arange(len(_mnames))
     _w  = 0.15
 
     _fig, _ax = plt.subplots(figsize=(13, 5))
-    for _mi, (_method, _color) in enumerate(zip(_METHODS, _COLORS)):
+    for _mi, (_meth, _color) in enumerate(zip(_METHODS, _COLORS)):
         _vals = [_data[_m][_mi] for _m in _mnames]
         _offset = (_mi - len(_METHODS)/2 + 0.5) * _w
-        _bars = _ax.bar(_xs + _offset, _vals, _w, label=_method, color=_color, alpha=0.85)
+        _bars = _ax.bar(_xs + _offset, _vals, _w, label=method_sel, color=_color, alpha=0.85)
         # Annotate padding bars with "=" to highlight no-gain
-        if _method == "Padding":
+        if _meth == "Padding":
             for _xi, _v in enumerate(_vals):
                 _ax.text(_xi + _offset, _v + 0.005, "=", ha="center", fontsize=8, color="purple", fontweight="bold")
 
@@ -386,20 +386,20 @@ def _(mo):
 
 @app.cell
 def _(mo):
-    _prompt_len = mo.ui.slider(10, 500, value=50, step=10, label="Prompt length (tokens)")
-    _model_type = mo.ui.radio(
+    prompt_len = mo.ui.slider(10, 500, value=50, step=10, label="Prompt length (tokens)")
+    model_type = mo.ui.radio(
         options=["Fast model (Gemini Flash, GPT-4o-mini)", "Slow model (Claude Sonnet, GPT-4o)"],
         value="Fast model (Gemini Flash, GPT-4o-mini)",
         label="Model type"
     )
-    mo.vstack([_prompt_len, _model_type])
-    return _prompt_len, _model_type
+    mo.vstack([prompt_len, model_type])
+    return prompt_len, model_type
 
 
 @app.cell
-def _(_prompt_len, _model_type, np, plt, mo):
-    _n_tok = _prompt_len.value
-    _fast  = "Fast" in _model_type.value
+def _(prompt_len, model_type, np, plt, mo):
+    _n_tok = prompt_len.value
+    _fast  = "Fast" in model_type.value
 
     # Latency model (approximate, based on paper figures)
     # Prefill: O(n) parallel, ~0.5ms/100tok for fast, ~1ms/100tok for slow
@@ -469,37 +469,37 @@ def _(mo):
 
 @app.cell
 def _(mo):
-    _q = mo.ui.text(value="Which of the following is a mixture rather than a compound?", label="Question")
-    _opts = mo.ui.text_area(
+    q_input = mo.ui.text(value="Which of the following is a mixture rather than a compound?", label="Question")
+    opts_input = mo.ui.text_area(
         value="A. oxygen and nitrogen in air\nB. sodium and chlorine in salt\nC. hydrogen and oxygen in water\nD. nitrogen and hydrogen in ammonia",
         label="Answer options", rows=4
     )
-    _order = mo.ui.radio(
+    order_sel = mo.ui.radio(
         options=["Question first", "Options first (harder — bigger gain from repetition)"],
         value="Options first (harder — bigger gain from repetition)",
         label="Prompt order"
     )
-    _method = mo.ui.dropdown(
+    method_sel = mo.ui.dropdown(
         options=["Baseline", "Repeat ×2", "Verbose (Let me repeat that:)", "Repeat ×3", "Padding (control)"],
         value="Repeat ×2",
         label="Method"
     )
-    mo.vstack([mo.hstack([_q, _order], gap=2), _opts, _method])
-    return _q, _opts, _order, _method
+    mo.vstack([mo.hstack([q_input, order_sel], gap=2), opts_input, method_sel])
+    return q_input, opts_input, order_sel, method_sel
 
 
 @app.cell
-def _(_q, _opts, _order, _method, mo):
-    _question = _q.value.strip()
-    _options  = _opts.value.strip()
+def _(q_input, opts_input, order_sel, method_sel, mo):
+    _question = q_input.value.strip()
+    _options  = opts_input.value.strip()
     _suffix   = "Reply with one letter ('A','B','C','D') in the format: The answer is <ANSWER>."
 
-    if "Question first" in _order.value:
+    if "Question first" in order_sel.value:
         _base = f"{_question}\n{_options}\n{_suffix}"
     else:
         _base = f"{_options}\n{_question}\n{_suffix}"
 
-    _m = _method.value
+    _m = method_sel.value
     if _m == "Baseline":
         _final = _base
     elif _m == "Repeat ×2":
@@ -528,7 +528,7 @@ def _(_q, _opts, _order, _method, mo):
             mo.md("**Why options-first is harder:** The model encodes options A–D before seeing the question. "
                   "With repetition, the second copy gives option tokens access to the question context."),
             kind="warn"
-        ) if "Options first" in _order.value else mo.md(""),
+        ) if "Options first" in order_sel.value else mo.md(""),
     ])
     return
 
@@ -567,18 +567,18 @@ def _(mo):
 
 @app.cell
 def _(mo):
-    _sel_prompt = mo.ui.text_area(
+    sel_prompt = mo.ui.text_area(
         value="Dale Lopez, Peter Sanchez, Allen Harris, Scott Davis, Hudson Leviathan, Daphne Kalman, Dennis Davis, Henry King, Alfred Cooper, Bruce Usher, Travis Ramirez, Rafael Jennings, Richard Rogers, Walter Young, Caleb Harris, Ben Kalman, Donald Carter, Richard Sterling, Mark Nightingale, Steven Carter, Talia Kalman, Dennis Hanson, James Harris, Craig Chavez, Paul Sanchez, Samuel Curtis, Jacob James, Allen Thomas, Dale Evans, James Fox, Douglas Allen, Orion Johnson, Alexander Wright, Eugene Morrison, Nelson Lee, Alan Young, Caleb Ward, Alberto Robinson, Robert McCarthy, Mark Price, Kenneth Ramirez, Jeffrey White, Chad Cooper, Arthur Waters, Bruce Callahan, Liam Leviathan, Steven Robinson, Alberto Murphy, Leonard Johnson, Robert Murphy\n\nWhat's the 25th name?",
         label="Prompt (try the NameIndex example from the paper — 50 names, find the 25th)",
         rows=5,
     )
-    _topk = mo.ui.slider(3, 25, value=10, label="Top-k tokens to selectively repeat")
-    mo.vstack([_sel_prompt, _topk])
-    return _sel_prompt, _topk
+    topk_slider = mo.ui.slider(3, 25, value=10, label="Top-k tokens to selectively repeat")
+    mo.vstack([sel_prompt, topk_slider])
+    return sel_prompt, topk_slider
 
 
 @app.cell
-def _(_sel_prompt, _topk, np, plt, mo):
+def _(sel_prompt, topk_slider, np, plt, mo):
     import re as _re
     from collections import Counter as _Counter
 
@@ -591,8 +591,8 @@ def _(_sel_prompt, _topk, np, plt, mo):
              "more","time","here","list","potentially","with","repetitions","names","what","the",
              "single","name","appears","right","between","and"}
 
-    _text   = _sel_prompt.value
-    _k      = _topk.value
+    _text   = sel_prompt.value
+    _k      = topk_slider.value
     _tokens = _re.findall(r"[A-Za-z']+", _text)
 
     mo.stop(len(_tokens) < 4, mo.callout(mo.md("Enter a longer prompt."), kind="warn"))
@@ -715,7 +715,7 @@ def _(mo):
 
 @app.cell
 def _(mo):
-    _task_type = mo.ui.radio(
+    task_type = mo.ui.radio(
         options=[
             "Multiple choice — options first",
             "Multiple choice — question first",
@@ -727,12 +727,12 @@ def _(mo):
         value="Multiple choice — options first",
         label="What type of task are you running?"
     )
-    _task_type
-    return _task_type,
+    task_type
+    return task_type,
 
 
 @app.cell
-def _(_task_type, mo):
+def _(task_type, mo):
     _GUIDE = {
         "Multiple choice — options first": (
             "🟢 **Strong recommendation: USE prompt repetition**",
@@ -776,7 +776,7 @@ def _(_task_type, mo):
         ),
     }
 
-    _title, _body, _kind = _GUIDE[_task_type.value]
+    _title, _body, _kind = _GUIDE[task_type.value]
     mo.vstack([
         mo.callout(mo.md(f"**{_title}**\n\n{_body}"), kind=_kind),
         mo.md(r"""
